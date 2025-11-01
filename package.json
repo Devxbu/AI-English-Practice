@@ -1,0 +1,22 @@
+{
+  "name": "speakai",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "devxbu",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@google-cloud/speech": "^7.2.1",
+    "@google-cloud/text-to-speech": "^6.4.0",
+    "@picovoice/pvrecorder-node": "^1.2.8",
+    "dotenv": "^17.2.3",
+    "fs": "^0.0.1-security",
+    "groq-sdk": "^0.34.0",
+    "play-sound": "^1.1.6",
+    "wav": "^1.0.2"
+  }
+}
