@@ -8,11 +8,12 @@ A terminal-based, hands-free English conversation app. It records your voice, tr
 - **Configurable playback** with a stoppable player (press `n` to skip)
 - **Transcribe** speech to text with Google Cloud Speech-to-Text
 - **Chat** with an English conversation partner via Groq
-- **Speak back** using Google Cloud Text-to-Speech (MP3, neural voice)
+- **Speak back** using Google Cloud Text-to-Speech (MP3, neural voice) or Piper (free, local)
 - **Event-driven, non-blocking flow**: next turn can start while audio plays
 - **Retries/backoff** around STT, AI, and TTS for robustness
 - **Session folders** per run to isolate artifacts
- - **Learning features**: roleplay scenarios, difficulty levels, end-of-turn corrections, pronunciation feedback (heuristic), vocabulary export, listening-only mode, "continue last session"
+- **Learning features**: roleplay scenarios, difficulty levels, end-of-turn corrections, pronunciation feedback (heuristic), vocabulary export, listening-only mode, "continue last session"
+- **Dual TTS providers**: Google (neural) and Piper (free, local). Emotion-aware prosody.
 
 ## Tech Stack
 
@@ -107,6 +108,11 @@ What happens:
 - Playback is non-blocking; press `n` to skip playback.
 - Press `Ctrl+C` to exit safely.
 
+### Choose TTS provider
+
+- Google (default): `node main.js --tts-provider=google`
+- Piper (free, local): `node main.js --tts-provider=piper --piper-model=/abs/path/en_US-lessac-medium.onnx`
+
 ## Controls
 
 - `q` — stop the current recording
@@ -138,6 +144,15 @@ node main.js \
   --demo \
   --ai-provider=groq \
   --source-wav=/absolute/path/to/sample.wav \
+  --tts-provider=google|piper \
+  --piper-model=/abs/path/to/model.onnx \
+  --piper-speaker=0 \
+  --piper-length=1.0 \
+  --piper-noise=0.6 \
+  --piper-noise-w=0.8 \
+  --voice=en-US-Neural2-J \
+  --rate=1.0 \
+  --pitch=0 \
   --scenario=coffee-shop|job-interview|travel \
   --level=beginner|intermediate|advanced \
   --corrections=end-of-turn|inline|off \
@@ -157,6 +172,8 @@ Examples:
 - Scenario and level with corrections: `node main.js --scenario=coffee-shop --level=intermediate --corrections=end-of-turn`
 - Listening-only: `node main.js --listening --topic="Traveling abroad" --minutes=2`
 - Continue last session defaults: `node main.js --continue`
+- Piper (recommended start): `node main.js --tts-provider=piper --piper-model=/abs/path/en_US-lessac-medium.onnx`
+- Google A/B voice: `node main.js --tts-provider=google --voice=en-US-Neural2-J --rate=1.0 --pitch=0`
 
 ## Troubleshooting
 
@@ -206,6 +223,10 @@ No start script is defined. Run with `node main.js`. You may add a script:
 │     ├─ recorderLpcm16.js
 │     ├─ recorderFile.js
 │     └─ playerDefault.js
+├─ utils/
+│  └─ tts/
+│     ├─ index.js (select Google or Piper)
+│     └─ piper.js (local, free TTS via piper binary)
 ├─ providers/
 │  └─ ai/
 │     └─ groqProvider.js
@@ -225,3 +246,25 @@ No start script is defined. Run with `node main.js`. You may add a script:
 
 - Keep your `.env` and Google key file private.
 - Never commit credentials to version control.
+
+## Piper setup (free, local TTS)
+
+- Install Piper:
+  - macOS: `brew install rhasspy/piper/piper`
+  - Linux: see https://github.com/rhasspy/piper for packages or build steps
+- Download a model (.onnx):
+  - Prebuilt: https://github.com/rhasspy/piper#pre-built-models
+  - Good starters: `en_US-lessac-medium.onnx`, `en_US-amy-low.onnx`
+- Run with Piper:
+  - `node main.js --tts-provider=piper --piper-model=/abs/path/en_US-lessac-medium.onnx`
+- Optional tuning:
+  - `--piper-speaker=0` (if multi-speaker model)
+  - `--piper-length=1.0` (slower >1, faster <1)
+  - `--piper-noise=0.6 --piper-noise-w=0.8` (expressiveness)
+
+## Google voice A/B (neural)
+
+- Switch voice/rate/pitch quickly:
+  - `--voice=en-US-Neural2-J --rate=1.0 --pitch=0`
+- Or set env:
+  - `GOOGLE_VOICE`, `GOOGLE_RATE`, `GOOGLE_PITCH`

@@ -4,10 +4,11 @@ const { EventEmitter } = require('events');
 const { buildConfig } = require('./config');
 const { selectRecorder, selectPlayer, sessionFile } = require('./utils/audio');
 const { transcribeAudio } = require('./utils/transcribeAudio');
-const { transformTextToSpeech } = require('./utils/textToSpeech');
 const { withRetry } = require('./utils/retry');
 const { createGroqProvider } = require('./providers/ai/groqProvider');
 const { SessionStore, extractVocab, exportVocabCsv } = require('./utils/sessionStore');
+const { buildEmotionSsml } = require('./utils/ssml');
+const { selectTTS } = require('./utils/tts');
 
 function newSessionId() {
   const t = new Date();
@@ -32,6 +33,7 @@ async function main() {
 
   const recorder = selectRecorder(config);
   const player = selectPlayer(config);
+  const tts = selectTTS(config);
   const ai = createGroqProvider({});
 
   // Load continuation defaults if requested
@@ -91,8 +93,9 @@ async function main() {
       () => ai.monologue({ topic: meta.topic, minutes: config.minutes, level: meta.level }),
       { attempts: 2, baseDelayMs: 500 }
     );
+    const { ssml } = buildEmotionSsml(speech, { mode: config.emotionMode, emotion: config.emotion });
     const audioPath = await withRetry(
-      () => transformTextToSpeech(speech, mp3Path),
+      () => tts.synthesize(ssml, mp3Path, { emotion: config.emotion }),
       { attempts: 3, baseDelayMs: 500, factor: 2 }
     );
     if (config.noOverlap) {
@@ -137,8 +140,9 @@ async function main() {
     );
     bus.emit('responded', reply);
 
+    const { ssml, emotion: usedEmotion } = buildEmotionSsml(reply, { mode: config.emotionMode, emotion: config.emotion });
     const audioPath = await withRetry(
-      () => transformTextToSpeech(reply, mp3Path),
+      () => tts.synthesize(ssml, mp3Path, { emotion: usedEmotion }),
       { attempts: 3, baseDelayMs: 500, factor: 2, onError: (e, n) => console.warn(`TTS attempt ${n} failed: ${e?.message || e}`) }
     );
     bus.emit('ttsReady', audioPath);
@@ -194,6 +198,7 @@ async function main() {
       ai: reply,
       corrections,
       userWordCount: userWords.length,
+      ttsEmotion: usedEmotion,
     });
     await store.save();
   }

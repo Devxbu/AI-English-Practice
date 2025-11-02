@@ -25,7 +25,22 @@ function buildConfig() {
     sessionRoot: args['session-dir'] || process.env.SESSION_DIR || 'sessions',
     demo: args.demo === true || String(process.env.DEMO || '').toLowerCase() === 'true',
     aiProvider: args['ai-provider'] || process.env.AI_PROVIDER || 'groq',
+    ttsProvider: args['tts-provider'] || process.env.TTS_PROVIDER || 'google', // google|piper
+    piperBin: args['piper-bin'] || process.env.PIPER_BIN || 'piper',
+    piperModel: args['piper-model'] || process.env.PIPER_MODEL || '',
+    piperConfig: args['piper-config'] || process.env.PIPER_CONFIG || '',
+    piperSpeaker: args['piper-speaker'] || process.env.PIPER_SPEAKER || '',
+    piperLength: args['piper-length'] ? Number(args['piper-length']) : (process.env.PIPER_LENGTH ? Number(process.env.PIPER_LENGTH) : 1.0),
+    piperNoise: args['piper-noise'] ? Number(args['piper-noise']) : (process.env.PIPER_NOISE ? Number(process.env.PIPER_NOISE) : undefined),
+    piperNoiseW: args['piper-noise-w'] ? Number(args['piper-noise-w']) : (process.env.PIPER_NOISE_W ? Number(process.env.PIPER_NOISE_W) : undefined),
+    // Google TTS tuning
+    googleVoice: args.voice || process.env.GOOGLE_VOICE || 'en-US-Neural2-F',
+    googleRate: args.rate ? Number(args.rate) : (process.env.GOOGLE_RATE ? Number(process.env.GOOGLE_RATE) : 1.05),
+    googlePitch: args.pitch ? Number(args.pitch) : (process.env.GOOGLE_PITCH ? Number(process.env.GOOGLE_PITCH) : -2.0),
     noOverlap: args['no-overlap'] === true || String(process.env.NO_OVERLAP || '').toLowerCase() === 'true',
+    // TTS emotion controls
+    emotionMode: args['emotion-mode'] || process.env.EMOTION_MODE || 'auto', // auto|manual
+    emotion: args.emotion || process.env.EMOTION || '', // happy|sad|excited|calm
     // Learning features
     scenario: args.scenario || process.env.SCENARIO || '',
     level: args.level || process.env.LEVEL || '',
