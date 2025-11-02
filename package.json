@@ -7,6 +7,7 @@
   "type": "commonjs",
   "main": "main.js",
   "scripts": {
+    "start": "node main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "dotenv": "^17.2.3",
     "fs": "^0.0.1-security",
     "groq-sdk": "^0.34.0",
+    "node-record-lpcm16": "^1.0.1",
     "play-sound": "^1.1.6",
     "wav": "^1.0.2"
   }

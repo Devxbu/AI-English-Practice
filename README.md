@@ -4,19 +4,24 @@ A terminal-based, hands-free English conversation app. It records your voice, tr
 
 ## Features
 
-- **Record voice** using PvRecorder
+- **Cross-platform recording**: PvRecorder (macOS/Windows), node-record-lpcm16 (Linux), file-based demo
+- **Configurable playback** with a stoppable player (press `n` to skip)
 - **Transcribe** speech to text with Google Cloud Speech-to-Text
 - **Chat** with an English conversation partner via Groq
-- **Speak back** using Google Cloud Text-to-Speech (MP3)
-- **Looped flow**: record → transcribe → reply → synthesize → play
+- **Speak back** using Google Cloud Text-to-Speech (MP3, neural voice)
+- **Event-driven, non-blocking flow**: next turn can start while audio plays
+- **Retries/backoff** around STT, AI, and TTS for robustness
+- **Session folders** per run to isolate artifacts
+ - **Learning features**: roleplay scenarios, difficulty levels, end-of-turn corrections, pronunciation feedback (heuristic), vocabulary export, listening-only mode, "continue last session"
 
 ## Tech Stack
 
 - Node.js (CommonJS)
 - @google-cloud/speech, @google-cloud/text-to-speech
 - groq-sdk
-- @picovoice/pvrecorder-node
+- @picovoice/pvrecorder-node, node-record-lpcm16
 - play-sound, wav
+- Node EventEmitter
 
 ## Prerequisites
 
@@ -39,6 +44,41 @@ GROQ_API_KEY=your_groq_api_key
 # Google Cloud auth
 # Absolute path to your Service Account JSON key file
 GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
+
+# Optional runtime config
+# RECORDER=auto|pvrecorder|lpcm16|file
+# PLAYER=default
+# DEVICE_INDEX=0
+# SESSION_DIR=sessions
+# DEMO=true|false
+# AI_PROVIDER=groq
+# DEMO_SOURCE_WAV=/absolute/path/to/sample.wav
+```
+
+## Session JSON format
+
+- File: `sessions/<sessionId>/session.json`
+- Structure (example):
+
+```
+{
+  "sessionId": "20251102...",
+  "startedAt": "2025-11-02T01:23:45.678Z",
+  "meta": { "scenario": "coffee-shop", "level": "intermediate", "listening": false, "topic": "" },
+  "turns": [
+    {
+      "ts": "2025-11-02T01:24:10.000Z",
+      "mode": "dialog",
+      "transcript": "hi I'd like a cappuccino",
+      "sttConfidence": 0.92,
+      "unclearWords": ["cappuccino"],
+      "ai": "Sure! Small or large?",
+      "corrections": "Say: 'I'd like a cappuccino, please.'",
+      "userWordCount": 5
+    }
+  ],
+  "summary": { "totalTurns": 5, "totalWords": 57, "avgConfidence": 0.88 }
+}
 ```
 
 Notes:
@@ -56,7 +96,7 @@ npm install
 ## Run
 
 ```
-node main.js
+npm start
 ```
 
 What happens:
@@ -64,34 +104,76 @@ What happens:
 - The app waits for you to record.
 - Press `q` to stop recording a turn.
 - The app transcribes, chats with AI, synthesizes speech, and plays the reply.
+- Playback is non-blocking; press `n` to skip playback.
 - Press `Ctrl+C` to exit safely.
 
 ## Controls
 
 - `q` — stop the current recording
+- `n` — stop current playback (skip)
 - `Ctrl+C` — exit the app (cleans up temp files like `output.mp3`, `recorded.wav`)
 
 ## File Flow
 
-- `recorded.wav` — temporary mic recording (16kHz mono PCM). Deleted after transcription.
-- `output.mp3` — synthesized reply. Deleted after playback.
+- Per-session directory: `sessions/<sessionId>/`
+- `turn-<n>.wav` — temporary mic recording (16kHz mono PCM)
+- `turn-<n>.mp3` — synthesized reply
+- Files are cleaned when possible; session folders help isolate artifacts.
 
 ## Configuration
 
 - Language: `en-US` (change in `utils/transcribeAudio.js` and `utils/textToSpeech.js`)
-- Voice: `NEUTRAL` (change in `utils/textToSpeech.js`)
+- Voice: neural `en-US-Neural2-F` with tuned prosody (change in `utils/textToSpeech.js`)
 - Streaming responses from Groq are concatenated in `utils/talkingAI.js`.
+- Choose recorder/player via CLI flags or env.
+
+### CLI Flags
+
+```
+node main.js \
+  --recorder=auto|pvrecorder|lpcm16|file \
+  --player=default \
+  --device-index=0 \
+  --session-dir=sessions \
+  --demo \
+  --ai-provider=groq \
+  --source-wav=/absolute/path/to/sample.wav \
+  --scenario=coffee-shop|job-interview|travel \
+  --level=beginner|intermediate|advanced \
+  --corrections=end-of-turn|inline|off \
+  --pronunciation-feedback \
+  --export-vocab=csv \
+  --listening \
+  --topic="Space travel" \
+  --minutes=2 \
+  --continue
+```
+
+Examples:
+
+- macOS PvRecorder: `node main.js --recorder=pvrecorder`
+- Linux LPCM16: `node main.js --recorder=lpcm16`
+- Demo (file input): `node main.js --recorder=file --source-wav=./sample.wav --demo`
+- Scenario and level with corrections: `node main.js --scenario=coffee-shop --level=intermediate --corrections=end-of-turn`
+- Listening-only: `node main.js --listening --topic="Traveling abroad" --minutes=2`
+- Continue last session defaults: `node main.js --continue`
 
 ## Troubleshooting
 
 - Recording errors on macOS:
   - Ensure the terminal has Microphone permissions (System Settings → Privacy & Security → Microphone).
+- Linux recording:
+  - Prefer `--recorder=lpcm16`. You may need ALSA/PulseAudio utilities installed.
+- Windows/macOS recording:
+  - Prefer `--recorder=pvrecorder`. Use `--device-index` to select the input device if needed.
 - Playback errors:
-  - macOS uses `afplay` via `play-sound` by default. Ensure it’s available (it is on macOS).
+  - macOS uses `afplay`; Linux/Windows will attempt a suitable backend via `play-sound`.
 - Google auth errors:
   - Verify `GOOGLE_APPLICATION_CREDENTIALS` points to a valid Service Account JSON with the required APIs enabled.
 - Empty transcription:
   - Speak clearly and ensure your input device is the default system mic.
+- API/network flakiness:
+  - Calls are retried with backoff automatically; check your connectivity and keys if issues persist.
 
 ## Scripts
 
@@ -110,17 +192,34 @@ No start script is defined. Run with `node main.js`. You may add a script:
 ```
 .
 ├─ main.js
+├─ config.js
 ├─ utils/
 │  ├─ recordAudio.js
 │  ├─ transcribeAudio.js
 │  ├─ talkingAI.js
 │  ├─ textToSpeech.js
-│  └─ mp3Player.js
+│  ├─ mp3Player.js (legacy - playback now via utils/audio/playerDefault)
+│  ├─ retry.js
+│  └─ audio/
+│     ├─ index.js
+│     ├─ recorderPv.js
+│     ├─ recorderLpcm16.js
+│     ├─ recorderFile.js
+│     └─ playerDefault.js
+├─ providers/
+│  └─ ai/
+│     └─ groqProvider.js
 ├─ package.json
 ├─ package-lock.json
 ├─ .env (not committed)
 └─ README.md
 ```
+
+## Quick Demo (no mic)
+
+- Put a short WAV at 16kHz mono PCM somewhere, e.g. `./sample.wav`.
+- Run: `node main.js --recorder=file --source-wav=./sample.wav --demo`
+- The app will copy the WAV as the recording for the turn, then proceed normally.
 
 ## Security
 

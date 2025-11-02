@@ -1,0 +1,39 @@
+{
+  "sessionId": "20251102015348390-jpa9xv",
+  "startedAt": "2025-11-02T01:53:48.400Z",
+  "meta": {
+    "scenario": "",
+    "level": "",
+    "listening": false,
+    "topic": ""
+  },
+  "turns": [
+    {
+      "mode": "dialog",
+      "transcript": "Hello.",
+      "sttConfidence": 0.6217275857925415,
+      "unclearWords": [
+        "Hello."
+      ],
+      "ai": "Hi, nice to meet you. How's your day going so far?",
+      "corrections": "",
+      "userWordCount": 1,
+      "ts": "2025-11-02T01:53:52.437Z"
+    },
+    {
+      "mode": "dialog",
+      "transcript": "Hi, nice to meet you. How's your day going so far?\nMy day is bad for now.",
+      "sttConfidence": 0.9924039490082684,
+      "unclearWords": [],
+      "ai": "Sorry to hear that your day isn't going well. What's been bothering you?",
+      "corrections": "",
+      "userWordCount": 8,
+      "ts": "2025-11-02T01:54:03.719Z"
+    }
+  ],
+  "summary": {
+    "totalTurns": 2,
+    "totalWords": 9,
+    "avgConfidence": 0.8070657674004049
+  }
+}
