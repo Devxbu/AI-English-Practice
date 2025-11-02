@@ -95,9 +95,17 @@ async function main() {
       () => transformTextToSpeech(speech, mp3Path),
       { attempts: 3, baseDelayMs: 500, factor: 2 }
     );
-    player.play(audioPath)
-      .then(() => { try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {} })
-      .catch(() => { try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {} });
+    if (config.noOverlap) {
+      try {
+        await player.play(audioPath);
+      } finally {
+        try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {}
+      }
+    } else {
+      player.play(audioPath)
+        .then(() => { try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {} })
+        .catch(() => { try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {} });
+    }
     const aiWords = extractVocab(speech);
     vocabBag.push(...aiWords);
     store.addTurn({ mode: 'listening', ai: speech });
@@ -136,15 +144,26 @@ async function main() {
     bus.emit('ttsReady', audioPath);
 
     // Play without blocking the next turn
-    player.play(audioPath)
-      .then(() => {
+    if (config.noOverlap) {
+      try {
+        await player.play(audioPath);
         bus.emit('played', audioPath);
-        try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {}
-      })
-      .catch((err) => {
+      } catch (err) {
         bus.emit('error', err);
+      } finally {
         try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {}
-      });
+      }
+    } else {
+      player.play(audioPath)
+        .then(() => {
+          bus.emit('played', audioPath);
+          try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {}
+        })
+        .catch((err) => {
+          bus.emit('error', err);
+          try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch {}
+        });
+    }
 
     // Optional corrections
     let corrections = '';

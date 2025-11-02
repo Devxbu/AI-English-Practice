@@ -25,6 +25,7 @@ function buildConfig() {
     sessionRoot: args['session-dir'] || process.env.SESSION_DIR || 'sessions',
     demo: args.demo === true || String(process.env.DEMO || '').toLowerCase() === 'true',
     aiProvider: args['ai-provider'] || process.env.AI_PROVIDER || 'groq',
+    noOverlap: args['no-overlap'] === true || String(process.env.NO_OVERLAP || '').toLowerCase() === 'true',
     // Learning features
     scenario: args.scenario || process.env.SCENARIO || '',
     level: args.level || process.env.LEVEL || '',
