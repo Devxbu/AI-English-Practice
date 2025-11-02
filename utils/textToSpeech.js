@@ -12,10 +12,17 @@ module.exports.transformTextToSpeech = async (text, outputFilePath = "output.mp3
     input: { text },
     voice: {
       languageCode: "en-US",
-      ssmlGender: "NEUTRAL",
+      name: "en-US-Neural2-F",
+      ssmlGender: "FEMALE",
     },
     audioConfig: {
       audioEncoding: "MP3",
+      speakingRate: 1.05,
+      pitch: -2.0,
+      effectsProfileId: [
+        "headphone-class-device",
+        "medium-bluetooth-speaker-class-device"
+      ]
     },
   };
 

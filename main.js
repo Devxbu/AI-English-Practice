@@ -12,18 +12,21 @@ const main = async () => {
     process.stdin.on("data", (key) => {
         if (key === "\u0003") {
             console.log("Exiting...");
-            fs.unlinkSync("output.mp3");
-            fs.unlinkSync("recorded.wav");
+            try { if (fs.existsSync("output.mp3")) fs.unlinkSync("output.mp3"); } catch {}
+            try { if (fs.existsSync("recorded.wav")) fs.unlinkSync("recorded.wav"); } catch {}
             process.exit();
         }
     });
     while (true) {
         await recordAudio();
         const transcript = await transcribeAudio();
+        if (!transcript || transcript.trim() === '' || transcript === '[No speech detected]') {
+            console.log('No speech detected, starting a new turn...');
+            continue;
+        }
         const text = await talkWithAI(transcript);
         const audioPath = await transformTextToSpeech(text);
         await playMP3(audioPath);
-        fs.unlinkSync(audioPath);
     }
 };
 

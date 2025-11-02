@@ -16,16 +16,13 @@ module.exports.recordAudio = async (outputFile = "recorded.wav") => {
     });
 
     let run = true;
-
-    process.stdin.setRawMode(true);
-    process.stdin.setEncoding("utf8");
-    process.stdin.resume();
-    process.stdin.on("data", (key) => {
+    const onData = (key) => {
         if (key === "q") {
             console.log("Q pressed. Stopping recording...");
             run = false;
         }
-    });
+    };
+    process.stdin.on("data", onData);
 
     try {
         console.log("Recording started");
@@ -46,5 +43,6 @@ module.exports.recordAudio = async (outputFile = "recorded.wav") => {
         recorder.stop();
         recorder.release();
         fileWriter.end();
+        process.stdin.removeListener("data", onData);
     }
 };

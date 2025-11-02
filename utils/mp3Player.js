@@ -13,8 +13,12 @@ module.exports.playMP3 = (filePath) => {
                 return reject(err);
             } else {
                 console.log('Playback finished');
-                fs.unlink(filePath, () => {});
                 resolve();
+                try {
+                    fs.unlink(filePath, () => { });
+                } catch (error) {
+                    console.error('Error deleting file:', error);
+                }
             }
         });
     });
